@@ -12,6 +12,8 @@ interface. The project will evolve in phases to investigate which agent
 architectures actually help an LLM play better, without turning a chess engine
 into an oracle.
 
+![Live chess-agent-harness interface showing a paused game and its move history](docs/chess-agent-harness-live.png)
+
 ## What is this?
 
 `chess-agent-harness` is an agent environment in which an LLM plays complete
