@@ -1,103 +1,105 @@
 # chess-agent-harness
 
-**Un framework para que cualquier LLM juegue al ajedrez lo mejor posible, sin hacer trampas.**
+**A framework designed to help any LLM play chess as well as it can—without cheating.**
 
-No es un bot ni un benchmark de fuerza. Es una capa de arquitectura entre el
-LLM y las reglas del ajedrez: el modelo decide y un entorno determinista mantiene
-el estado, presenta las jugadas disponibles y verifica cada acción.
+This is not a chess bot or another model-strength benchmark. It is an
+architecture layer between an LLM and the rules of chess: the model makes the
+decisions while a deterministic environment owns the state, exposes the
+available moves, and validates every action.
 
-El MVP ya permite observar y controlar una partida completa desde una interfaz
-web. El proyecto crecerá por fases para estudiar qué arquitectura ayuda de verdad
-a un LLM a jugar mejor, sin convertir un motor de ajedrez en su oráculo.
+The MVP already lets users watch and control a complete game from a live web
+interface. The project will evolve in phases to investigate which agent
+architectures actually help an LLM play better, without turning a chess engine
+into an oracle.
 
-## ¿Qué es esto?
+## What is this?
 
-`chess-agent-harness` es un entorno de agentes donde un LLM juega partidas
-completas mediante un contrato estructurado. La posición vive en `ChessEnv`,
-`python-chess` es la autoridad sobre las reglas y cada agente devuelve una
-acción UCI como `e2e4`.
+`chess-agent-harness` is an agent environment in which an LLM plays complete
+chess games through a structured contract. The position lives in `ChessEnv`,
+`python-chess` is the authority on the rules, and every agent returns a UCI move
+such as `e2e4`.
 
-El agente LLM admite dos modos:
+The LLM agent supports two modes:
 
-- `tools`: expone `legal_moves` y `make_move` mediante tool calling. La posición
-  actual se entrega en la observación y `make_move` restringe la elección a las
-  jugadas legales conocidas por el entorno.
-- `plain`: entrega FEN y jugadas legales en el prompt y pide una única jugada
-  UCI. Este modo permite usar servidores OpenAI-compatible sin tool calling.
+- `tools` exposes `legal_moves` and `make_move` through tool calling. The current
+  position is included in the observation, and `make_move` restricts the choice
+  to the legal moves known by the environment.
+- `plain` includes the FEN and legal move list in the prompt and requests one UCI
+  move. This mode supports OpenAI-compatible servers without tool calling.
 
-En ambos casos, el entorno vuelve a validar la acción. Si el LLM propone una
-jugada ilegal y el fallback está habilitado, se emite un evento visible y la
-partida continúa con una jugada legal aleatoria.
+In both modes, the environment validates the action again. If the LLM proposes
+an illegal move and fallback is enabled, the harness emits a visible event and
+continues the game with a random legal move.
 
-| Otros proyectos | `chess-agent-harness` |
+| Other projects | `chess-agent-harness` |
 |---|---|
-| Miden y clasifican modelos | Busca mejorar la arquitectura de cualquier LLM |
-| Preguntan qué modelo gana | Pregunta qué contexto y herramientas le ayudan |
-| El motor puede decidir la jugada | El LLM decide y el entorno verifica |
-| Se centran en el resultado agregado | Se centra en el ciclo de decisión del agente |
+| Measure and rank models | Improves the architecture available to any LLM |
+| Ask which model wins | Asks which context and tools help the model |
+| May let an engine choose the move | The LLM decides; the environment verifies |
+| Focus on aggregate results | Focuses on the agent decision loop |
 
-## Qué funciona hoy
+## What works today
 
-El MVP actual incluye:
+The current MVP includes:
 
-- partidas `random vs random`, `LLM vs random` o `LLM vs LLM`;
-- clientes OpenAI-compatible para OpenAI, Ollama, vLLM y LM Studio;
-- selección por tool calling o respuesta UCI en texto plano;
-- validación de legalidad y finales mediante `python-chess`;
-- fallback configurable ante jugadas ilegales;
-- límite configurable de medias jugadas;
-- eventos en vivo mediante FastAPI y WebSocket;
-- tablero React con historial, Play/Pausa, Stop, Anterior y Siguiente;
-- una partida compartida por todos los espectadores conectados;
-- estado y eventos solo en memoria durante la ejecución;
-- PGN fuera del flujo obligatorio del MVP.
+- `random vs random`, `LLM vs random`, and `LLM vs LLM` games;
+- an OpenAI-compatible client for OpenAI, Ollama, vLLM, and LM Studio;
+- move selection through tool calling or plain-text UCI responses;
+- move legality and game-over validation with `python-chess`;
+- configurable fallback for illegal LLM moves;
+- a configurable maximum number of plies;
+- live FastAPI and WebSocket events;
+- a React board with move history, Play/Pause, Stop, Previous, and Next;
+- one shared game for all connected spectators;
+- in-memory state and event replay for the running process;
+- optional PGN deliberately kept outside the required MVP flow.
 
-## Qué no es
+## What this is not
 
-- **No es un motor de ajedrez.** No pretende competir con Stockfish.
-- **No es un benchmark todavía.** No hay leaderboard, métricas agregadas ni
-  ranking de modelos.
-- **No usa un motor como oráculo.** La verificación solo comprueba reglas y
-  legalidad; no recomienda la mejor jugada.
-- **No conserva memoria entre partidas.** Cada partida comienza desde cero.
-- **No tiene autenticación ni salas.** Todos los clientes conectados observan y
-  controlan la misma partida.
-- **No persiste una traza por ply.** El historial existe en RAM para transportar
-  el estado y navegar en la interfaz.
-- **No es un producto final.** Es un núcleo usable sobre el que ejecutar
-  experimentos controlados.
+- **It is not a chess engine.** It does not try to compete with Stockfish.
+- **It is not a benchmark yet.** There is no leaderboard, model ranking, or
+  aggregate metrics layer.
+- **It does not use an engine as an oracle.** Validation checks rules and
+  legality; it does not recommend the best move.
+- **It does not retain memory between games.** Every game starts clean.
+- **It has no authentication or rooms.** Every connected client watches and
+  controls the same game.
+- **It does not persist a per-ply trace.** History stays in memory for event
+  replay and frontend navigation.
+- **It is not a finished product.** It is a usable core for controlled
+  experiments.
 
-## Para qué sirve
+## What is it useful for?
 
-1. **Harness de desarrollo.** Observar cómo un LLM actúa en un dominio con
-   estado formal, reglas verificables y horizonte largo.
-2. **Base experimental.** Comparar prompts, contratos de tools, memoria o
-   verificadores sin reescribir las reglas ni la interfaz de los agentes.
-3. **Demo en vivo.** Mostrar una partida en tiempo real, pausarla, reiniciarla y
-   recorrer las posiciones recibidas.
-4. **Banco de pruebas futuro.** Añadir evaluación y reproducción cuando el core
-   sea estable, manteniendo separadas ejecución y medición.
+1. **Agent development.** Observe how an LLM behaves in a formal domain with
+   verifiable rules, explicit state, and a long decision horizon.
+2. **Controlled experiments.** Compare prompts, tool contracts, memory, or
+   verification strategies without rewriting the rules or agent interface.
+3. **Live demonstrations.** Watch a game in real time, pause or reset it, and
+   navigate through the positions received by the browser.
+4. **A future evaluation bed.** Add reproducibility and measurement once the
+   core is stable, while keeping execution separate from evaluation.
 
-## Principios de diseño
+## Design principles
 
-1. **El estado vive en el entorno.** El modelo recibe una observación; no es la
-   fuente de verdad del tablero.
-2. **Tools-first.** Siempre que el proveedor lo permita, el agente elige mediante
-   herramientas con argumentos estructurados.
-3. **El LLM decide.** Ningún motor selecciona jugadas en nombre del modelo.
-4. **Verificación determinista.** `python-chess` resuelve legalidad, turnos y
-   condiciones de final de partida.
-5. **Separación de responsabilidades.** El loop emite eventos sin conocer
-   WebSocket o React; el transporte no contiene lógica de agentes.
-6. **Extensión por fases.** Memoria, métricas y evaluación deben integrarse
-   alrededor de los contratos existentes.
+1. **State lives in the environment.** The model receives an observation; it is
+   never the source of truth for the board.
+2. **Tools first.** When the provider supports them, the agent chooses moves
+   through tools with structured arguments.
+3. **The LLM decides.** No chess engine selects a move on behalf of the model.
+4. **Deterministic verification.** `python-chess` resolves legality, turns, and
+   game-ending conditions.
+5. **Separation of concerns.** The loop emits events without knowing about
+   WebSocket or React, and the transport layer contains no agent logic.
+6. **Phased extension.** Memory, metrics, and evaluation should integrate around
+   the existing contracts rather than replace the core.
 
-## Arquitectura del MVP
+## MVP architecture
 
 ```text
-frontend React
-    │  comandos: start / pause / resume / stop
-    │  eventos: game_started / move / illegal / control / game_over / game_reset
+React frontend
+    │  commands: start / pause / resume / stop
+    │  events: game_started / move / illegal / control / game_over / game_reset
     ▼
 FastAPI WebSocket ── ConnectionManager
     │
@@ -111,44 +113,45 @@ ChessEnv ── python-chess
 
 ```text
 backend/
-├── main.py              aplicación FastAPI y control de la partida compartida
+├── main.py              FastAPI app and shared-game controls
 ├── core/
-│   ├── env.py           estado y reglas mediante python-chess
-│   ├── schemas.py       contratos Observation y Action
-│   └── game_loop.py     ciclo independiente que emite eventos
+│   ├── env.py           state and rules powered by python-chess
+│   ├── schemas.py       Observation and Action contracts
+│   └── game_loop.py     transport-independent event loop
 ├── agents/
-│   ├── base.py          interfaz común de agentes
-│   ├── random_agent.py  agente de referencia
-│   └── llm_agent.py     cliente OpenAI-compatible
+│   ├── base.py          common agent interface
+│   ├── random_agent.py  reference agent
+│   └── llm_agent.py     OpenAI-compatible client
 └── ws/
-    └── manager.py       conexiones, broadcast y replay en memoria
+    └── manager.py       connections, broadcast, and in-memory replay
 
 frontend/src/
-├── App.tsx              estado del espectador y controles
-└── components/Board.tsx tablero de solo lectura
+├── App.tsx              spectator state and controls
+└── components/Board.tsx read-only chessboard
 
-configs/game.yaml        agentes y límites de la partida
+configs/game.yaml        agents and game limits
 ```
 
-`game_loop` no importa `ws` ni frontend. `ConnectionManager` no importa agentes.
-`main.py` actúa como composition root: construye los agentes, conecta el loop con
-el transporte y procesa los comandos del usuario.
+`game_loop` does not import `ws` or frontend code. `ConnectionManager` does not
+import agents. `main.py` is the composition root: it constructs agents, connects
+the loop to the transport, and handles user commands.
 
-## Cómo se controla una partida
+## Game controls
 
-- **Play** crea una partida nueva o reanuda una partida pausada.
-- **Pausar** detiene el loop antes de la siguiente decisión; una llamada al LLM
-  que ya esté en curso puede terminar.
-- **Stop** cancela la tarea, limpia el historial y restaura la posición inicial.
-- **Anterior** y **Siguiente** recorren localmente las posiciones recibidas sin
-  modificar el estado compartido del backend.
+- **Play** starts a new game or resumes a paused game.
+- **Pause** stops the loop before the next decision. An LLM request that is
+  already running may finish first.
+- **Stop** cancels the task, clears the move history, and restores the initial
+  position.
+- **Previous** and **Next** navigate locally through received positions without
+  changing the shared backend state.
 
-Al reconectar, el servidor reproduce los eventos conservados en RAM. Reiniciar
-el proceso del backend elimina ese estado.
+When a browser reconnects, the server replays the events held in memory.
+Restarting the backend process clears that state.
 
-## Instalación
+## Installation
 
-Requisitos: Python 3.11 o posterior y pnpm.
+Requirements: Python 3.11 or later and pnpm.
 
 ```sh
 python3 -m venv .venv
@@ -157,25 +160,25 @@ pip install -e '.[test]'
 pnpm --dir frontend install
 ```
 
-Inicia el backend:
+Start the backend:
 
 ```sh
 source .venv/bin/activate
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-En otra terminal, inicia el frontend:
+In another terminal, start the frontend:
 
 ```sh
 pnpm --dir frontend dev
 ```
 
-Abre [http://localhost:5173](http://localhost:5173).
+Open [http://localhost:5173](http://localhost:5173).
 
-## Configuración de agentes
+## Agent configuration
 
-El proyecto arranca como `random vs random` para funcionar sin credenciales. La
-configuración vive en `configs/game.yaml`:
+The project defaults to `random vs random`, so it works without credentials.
+Configuration lives in `configs/game.yaml`:
 
 ```yaml
 white:
@@ -196,18 +199,17 @@ ws:
   port: 8000
 ```
 
-Para OpenAI, exporta la clave antes de iniciar el servidor:
+For OpenAI, export the API key before starting the backend:
 
 ```sh
-export OPENAI_API_KEY='tu-clave'
+export OPENAI_API_KEY='your-key'
 ```
 
-Para Ollama, vLLM o LM Studio, usa su endpoint OpenAI-compatible, establece
-`provider: local` y selecciona un modelo disponible. Usa `mode: plain` si el
-servidor o modelo no admite tool calling. Los cambios al YAML requieren reiniciar
-el backend.
+For Ollama, vLLM, or LM Studio, use the server's OpenAI-compatible endpoint, set
+`provider: local`, and select an installed model. Use `mode: plain` if the server
+or model does not support tool calling. YAML changes require a backend restart.
 
-## Verificación
+## Verification
 
 ```sh
 .venv/bin/python -m pytest
@@ -215,47 +217,44 @@ el backend.
 pnpm --dir frontend build
 ```
 
-Las pruebas actuales cubren FEN válidos durante el loop, recuperación ante una
-jugada ilegal y el flujo básico de eventos WebSocket, incluido el reset.
+The current tests cover valid FEN positions throughout the loop, recovery from
+an illegal move, and the basic WebSocket event flow, including reset.
 
-## Hacia dónde va el proyecto
+## Project roadmap
 
-La evolución prevista está organizada para validar cada capacidad antes de
-incorporar la siguiente:
+The project will validate each capability before adding the next one.
 
-### Fase 1 — Núcleo jugable
+### Phase 1 — Playable core
 
-Estabilizar los contratos de observación y acción, el ciclo de partida, los
-controles y la compatibilidad con proveedores OpenAI-compatible. Esta es la fase
-actual.
+Stabilize the observation and action contracts, game loop, user controls, and
+OpenAI-compatible providers. This is the current phase.
 
-### Fase 2 — Reproducibilidad y evaluación
+### Phase 2 — Reproducibility and evaluation
 
-Añadir identificadores de partida, semillas, PGN persistente opcional, eventos
-reproducibles y métricas separadas del loop. Esto permitirá comparar estrategias
-sin convertir el core en un benchmark runner.
+Add game identifiers, seeds, optional persistent PGN, reproducible events, and
+metrics outside the game loop. This will allow strategies to be compared without
+turning the core into a benchmark runner.
 
-### Fase 3 — Mejor contexto para el LLM
+### Phase 3 — Better context for the LLM
 
-Evaluar memoria dentro de una partida, resúmenes estructurados, planes y
-recuperación de posiciones similares. Cada incorporación deberá demostrar una
-mejora medible frente al agente base.
+Evaluate within-game memory, structured summaries, plans, and retrieval of
+similar positions. Every addition should demonstrate a measurable improvement
+over the baseline agent.
 
-### Fase 4 — Verificación táctica controlada
+### Phase 4 — Controlled tactical verification
 
-Explorar verificadores y crítica de candidatos. Si se integra Stockfish, su rol
-será oponente, evaluador posterior o componente experimental explícito; nunca un
-canal oculto que entregue al LLM la jugada correcta.
+Explore candidate critics and verification strategies. If Stockfish is added,
+its role will be an opponent, post-game evaluator, or explicit experimental
+component—never a hidden channel that gives the LLM the correct move.
 
-### Fase 5 — Escala
+### Phase 5 — Scale
 
-Incorporar múltiples salas, aislamiento de partidas, autenticación, workers y un
-runner de experimentos sin cambiar los contratos fundamentales de `ChessEnv` y
-`Agent`.
+Add multiple rooms, game isolation, authentication, workers, and an experiment
+runner without changing the fundamental `ChessEnv` and `Agent` contracts.
 
-La hoja de ruta es una dirección de diseño, no una promesa de funcionalidades ya
-implementadas.
+The roadmap is a design direction, not a claim that these features already
+exist.
 
-## Licencia
+## License
 
-Distribuido bajo la [licencia MIT](LICENSE).
+Distributed under the [MIT License](LICENSE).
