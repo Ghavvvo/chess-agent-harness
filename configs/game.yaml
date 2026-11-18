@@ -1,0 +1,10 @@
+white:
+  type: random
+black:
+  type: random
+max_plies: 200
+illegal_fallback: true
+move_delay: 0.4
+ws:
+  host: 0.0.0.0
+  port: 8000
